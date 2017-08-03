@@ -21,6 +21,7 @@ import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.media.ThumbnailUtils
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.widget.ImageView
 import java.util.*
 
@@ -35,8 +36,28 @@ class MultiImageView(context: Context, attrs: AttributeSet) : ImageView(context,
             field = value
             invalidate()
         }
+
+    private val paintDivider = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    var dividerColor = Color.WHITE
+        set(value) {
+            field = value
+            paintDivider.color = value
+            invalidate()
+        }
+    var dividerWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1f, resources.displayMetrics)
+        set(value) {
+            field = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, resources.displayMetrics)
+            invalidate()
+        }
+
     //Corners radius for rectangle shape
     var rectCorners = 100
+
+    init {
+        paintDivider.isAntiAlias = true
+        paintDivider.color = dividerColor
+    }
 
     private val bitmaps = ArrayList<Bitmap>()
     private val path = Path()
@@ -68,7 +89,7 @@ class MultiImageView(context: Context, attrs: AttributeSet) : ImageView(context,
      * recreate MultiDrawable and set it as Drawable to ImageView
      */
     private fun refresh() {
-        multiDrawable = MultiDrawable(bitmaps)
+        multiDrawable = MultiDrawable(bitmaps, dividerWidth)
         setImageDrawable(multiDrawable)
     }
 
@@ -89,6 +110,7 @@ class MultiImageView(context: Context, attrs: AttributeSet) : ImageView(context,
                         path.addOval(rect, Path.Direction.CW)
                     }
                     //Clip with shape
+                    canvas.drawPath(path, paintDivider)
                     canvas.clipPath(path)
                 }
                 super.onDraw(canvas)
@@ -102,9 +124,11 @@ class MultiImageView(context: Context, attrs: AttributeSet) : ImageView(context,
     }
 }
 
-class MultiDrawable(val bitmaps: ArrayList<Bitmap>) : Drawable() {
+class MultiDrawable(val bitmaps: ArrayList<Bitmap>, val dividerWidth: Float) : Drawable() {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val items = ArrayList<PhotoItem>()
+
+    fun halfDivider(): Int = (dividerWidth / 2).toInt()
 
     /**
      * Create PhotoItem with position and size depends of count of images
@@ -117,25 +141,25 @@ class MultiDrawable(val bitmaps: ArrayList<Bitmap>) : Drawable() {
         } else if (bitmaps.size == 2) {
             val bitmap1 = scaleCenterCrop(bitmaps[0], bounds.width(), bounds.height() / 2)
             val bitmap2 = scaleCenterCrop(bitmaps[1], bounds.width(), bounds.height() / 2)
-            items.add(PhotoItem(bitmap1, Rect(0, 0, bounds.width() / 2, bounds.height())))
-            items.add(PhotoItem(bitmap2, Rect(bounds.width() / 2, 0, bounds.width(), bounds.height())))
+            items.add(PhotoItem(bitmap1, Rect(0, 0, (bounds.width() / 2) - halfDivider(), bounds.height())))
+            items.add(PhotoItem(bitmap2, Rect((bounds.width() / 2) + halfDivider(), 0, bounds.width(), bounds.height())))
         } else if (bitmaps.size == 3) {
             val bitmap1 = scaleCenterCrop(bitmaps[0], bounds.width(), bounds.height() / 2)
             val bitmap2 = scaleCenterCrop(bitmaps[1], bounds.width() / 2, bounds.height() / 2)
             val bitmap3 = scaleCenterCrop(bitmaps[2], bounds.width() / 2, bounds.height() / 2)
-            items.add(PhotoItem(bitmap1, Rect(0, 0, bounds.width() / 2, bounds.height())))
-            items.add(PhotoItem(bitmap2, Rect(bounds.width() / 2, 0, bounds.width(), bounds.height() / 2)))
-            items.add(PhotoItem(bitmap3, Rect(bounds.width() / 2, bounds.height() / 2, bounds.width(), bounds.height())))
+            items.add(PhotoItem(bitmap1, Rect(0, 0, (bounds.width() / 2) - halfDivider(), bounds.height())))
+            items.add(PhotoItem(bitmap2, Rect((bounds.width() / 2) + halfDivider(), 0, bounds.width(), (bounds.height() / 2) - halfDivider())))
+            items.add(PhotoItem(bitmap3, Rect((bounds.width() / 2) + halfDivider(), (bounds.height() / 2) + halfDivider(), bounds.width(), bounds.height())))
         }
         if (bitmaps.size == 4) {
             val bitmap1 = scaleCenterCrop(bitmaps[0], bounds.width() / 2, bounds.height() / 2)
             val bitmap2 = scaleCenterCrop(bitmaps[1], bounds.width() / 2, bounds.height() / 2)
             val bitmap3 = scaleCenterCrop(bitmaps[2], bounds.width() / 2, bounds.height() / 2)
             val bitmap4 = scaleCenterCrop(bitmaps[3], bounds.width() / 2, bounds.height() / 2)
-            items.add(PhotoItem(bitmap1, Rect(0, 0, bounds.width() / 2, bounds.height() / 2)))
-            items.add(PhotoItem(bitmap2, Rect(0, bounds.height() / 2, bounds.width() / 2, bounds.height())))
-            items.add(PhotoItem(bitmap3, Rect(bounds.width() / 2, 0, bounds.width(), bounds.height() / 2)))
-            items.add(PhotoItem(bitmap4, Rect(bounds.width() / 2, bounds.height() / 2, bounds.width(), bounds.height())))
+            items.add(PhotoItem(bitmap1, Rect(0, 0, (bounds.width() / 2) - halfDivider(), (bounds.height() / 2) - halfDivider())))
+            items.add(PhotoItem(bitmap2, Rect(0, (bounds.height() / 2) + halfDivider(), (bounds.width() / 2) - halfDivider(), bounds.height())))
+            items.add(PhotoItem(bitmap3, Rect((bounds.width() / 2) + halfDivider(), 0, bounds.width(), (bounds.height() / 2) - halfDivider())))
+            items.add(PhotoItem(bitmap4, Rect((bounds.width() / 2) + halfDivider(), (bounds.height() / 2) + halfDivider(), bounds.width(), bounds.height())))
         }
     }
 
@@ -177,4 +201,3 @@ class MultiDrawable(val bitmaps: ArrayList<Bitmap>) : Drawable() {
     }
     //***------------------***//
 }
-
